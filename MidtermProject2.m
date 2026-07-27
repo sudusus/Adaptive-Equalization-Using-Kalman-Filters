@@ -1,9 +1,10 @@
 % ------------------------------------------------------------------------
-% Authors: Aaron B., James L. Breithaupt, Matthew F. Milano
-% Date: 7/26/26
+% Authors: Aaron L. Beverlin, James L. Breithaupt, Matthew F. Milano
+% Date: 7/29/26
 % Course: EE 553 - Topics in Digital Signal Processing
 % Assignment: Midterm Project 2
-% Topic: Kalman Filter Applications in Adaptive Equalization for High-Speed Channels
+% Topic: Kalman Filter Applications in Adaptive Equalization 
+%        for High-Speed Channels
 % Topic Focus: Restoring optical signals that undergo distortion effects
 %              caused by fiber optics using adaptive equalization
 %              and Kalman Filtering.
@@ -50,6 +51,8 @@ P = 10 * eye(L);
 
 % Process-noise covariance
 % Increasing this allows the equalizer to track faster channel changes.
+% Q = 1e-4 * eye(L);
+% Q = 1e-5 * eye(L);
 Q = 1e-6 * eye(L);
 
 % Measurement-noise covariance
@@ -63,6 +66,7 @@ y = zeros(N, 1);          % Equalizer output
 e = zeros(N, 1);          % Kalman innovation/error
 w_values = zeros(L, N);   % Equalizer coefficient history
 P_trace = zeros(N, 1);    % Total coefficient uncertainty
+gainMax = zeros(N, 1);    % Kalman gain maximum
 
 %% Kalman adaptive equalization
 for n = max(L, delay + 1):N
@@ -102,6 +106,9 @@ for n = max(L, delay + 1):N
     % Kalman gain
     K = (P_predicted * H.') / innovationVariance;
 
+    % Store Kalman gain magnitude
+    gainMax(n) = max(abs(K));
+
     % Update equalizer tap coefficients
     w = w_predicted + K * e(n);
 
@@ -117,6 +124,7 @@ for n = max(L, delay + 1):N
     % Store results
     w_values(:, n) = w;
     P_trace(n) = trace(P);
+
 end
 
 %% Symbol detection and analysis
@@ -173,9 +181,9 @@ ylabel('Amplitude');
 grid on;
 
 % Plot 2: Kalman convergence
-mse_smooth = movmean(e.^2, 100);
-
 figure(2);
+
+mse_smooth = movmean(e.^2, 100);
 plot(10*log10(mse_smooth + eps));
 title('Kalman Equalizer Convergence');
 xlabel('Iteration');
@@ -184,8 +192,8 @@ grid on;
 
 % Plot 3: Equalizer coefficients over time
 figure(3);
-plot(w_values.');
 
+plot(w_values.');
 title('Kalman Equalizer Coefficient Evolution');
 xlabel('Iteration');
 ylabel('Coefficient Value');
@@ -195,13 +203,13 @@ legend('Tap 1', 'Tap 2', 'Tap 3', 'Tap 4', ...
        'Tap 5', 'Tap 6', 'Tap 7', 'Tap 8', ...
        'Location', 'best');
 
-% Plot 4: Final equalizer coefficients
+% Plot 4: Maximum absolute Kalman gain vs. iteration
 figure(4);
-stem(1:L, w, 'filled');
 
-title('Final Kalman Equalizer Coefficients');
-xlabel('Tap Number');
-ylabel('Coefficient Value');
+plot(gainMax(max(L, delay+1):end));
+title('Maximum Kalman Gain Element');
+xlabel('Iteration');
+ylabel('Maximum Absolute Kalman Gain');
 grid on;
 
 % Plot 5: Received and equalized signals
@@ -223,6 +231,7 @@ grid on;
 
 % Plot 6: Received signal constellation
 figure(6);
+
 scatter(real(r(start_idx:end)), ...
         zeros(length(r(start_idx:end)),1), '.');
 
@@ -233,6 +242,7 @@ grid on;
 
 % Plot 7: Equalized signal constellation
 figure(7);
+
 scatter(real(y(start_idx:end)), ...
         zeros(length(y(start_idx:end)),1), '.');
 
@@ -251,9 +261,25 @@ title('Eye Diagram After Kalman Equalization');
 
 % Plot 10: Coefficient uncertainty
 figure(10);
-semilogy(P_trace(max(L, delay+1):end) + eps);
 
+semilogy(P_trace(max(L, delay+1):end) + eps);
 title('Kalman Coefficient Uncertainty');
 xlabel('Iteration');
 ylabel('Trace of P');
 grid on;
+
+% Plot 11: Combined channel-equalizer response
+figure(11);
+
+combinedResponse = conv(h, w);
+ideal = zeros(size(combinedResponse));
+ideal(delay+1) = 1;
+
+stem(combinedResponse,'filled');
+hold on;
+stem(ideal,'r--');
+title('Combined Channel and Equalizer Response');
+xlabel('Sample');
+ylabel('Amplitude');
+grid on;
+legend('Combined Response','Ideal Delayed Impulse');
