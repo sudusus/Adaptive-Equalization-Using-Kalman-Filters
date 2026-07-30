@@ -141,9 +141,17 @@ detected(y < 0) = -1;
 % BER calculation
 start_idx = 1000;      % Ignore adaptation period
 
+% The dominant channel coefficient is h(2), which introduces a
+% one-symbol channel delay.
+[~, dominantTap] = max(abs(h));
+channelDelay = dominantTap - 1;
+
 % BER before equalization
-numErr_Before = sum(received(start_idx:end) ~= x(start_idx:end));
-BER_Before = numErr_Before/length(received(start_idx:end));
+receivedComparison = received(start_idx:end);
+originalBefore = x(start_idx-channelDelay:end-channelDelay);
+
+numErr_Before = sum(receivedComparison ~= originalBefore);
+BER_Before = numErr_Before / length(receivedComparison);
 
 % BER after equalization
 detectedComparison = detected(start_idx:end);
