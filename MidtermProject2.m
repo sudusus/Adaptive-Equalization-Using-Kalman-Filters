@@ -16,8 +16,8 @@ close all;
 
 %% System parameters
 N = 5000;                 % Number of transmitted symbols
-SNR = 25;                 % Channel SNR in dB
-h = [0.2 0.9 0.4];        % Dispersive ISI channel impulse response
+SNR = 20;                 % Channel SNR in dB
+h = [0.3 0.8 0.4];        % Dispersive ISI channel impulse response
 L = 8;                    % Number of adaptive equalizer taps
 delay = 4;                % Equalizer decision delay
 
